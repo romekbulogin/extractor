@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: extractor
+logging:
+  config: 'classpath:log4j2.yml'

@@ -49,7 +49,5 @@ Configuration:
         - ref: CONSOLE_LOG
         - ref: FILE_LOG
     Logger:
-      - name: ru.miravela
+      - name: ru.dataquire
         level: debug
-        AppenderRef:
-          - ref: FILE_LOG

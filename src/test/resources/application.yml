@@ -1,5 +1,14 @@
 spring:
   application:
     name: extractor
+extractor:
+  coordinator:
+    address: http://localhost:8080
+  connection:
+    minimum-idle: 2
+    maximum-pool-size: 16
+  thread-pool-size: 16
 logging:
   config: 'classpath:log4j2.yml'
+server:
+  port: 9088

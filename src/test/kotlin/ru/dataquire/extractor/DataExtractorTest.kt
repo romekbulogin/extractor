@@ -26,4 +26,20 @@ class DataExtractorTest {
             println(json)
         }
     }
+
+    @Test
+    fun getChunksWithNumbers() {
+        val threadPoolSize = 16
+        val countRecordsInTable = 512
+
+        val chunkSize = if (countRecordsInTable / threadPoolSize < 1) {
+            countRecordsInTable
+        } else {
+            countRecordsInTable / threadPoolSize
+        }
+
+        (0..countRecordsInTable).chunked(chunkSize).forEach { chunk ->
+            println(chunk)
+        }
+    }
 }

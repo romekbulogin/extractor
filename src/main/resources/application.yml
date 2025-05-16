@@ -1,6 +1,13 @@
 spring:
   application:
     name: extractor
+  kafka:
+    bootstrap-servers: localhost:29092,localhost:29093,localhost:29094
+    producer:
+      bootstrap-servers: localhost:29092,localhost:29093,localhost:29024
+      compression-type: lz4
+      properties:
+        max.request.size: 26214400
 extractor:
   coordinator:
     address: http://localhost:8080

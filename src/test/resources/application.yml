@@ -1,9 +1,12 @@
 spring:
   application:
     name: extractor
+  kafka:
+    producer:
+      bootstrap-servers: localhost:9092
 extractor:
-  coordinator:
-    address: http://localhost:8080
+  #  coordinator:
+  #    address: http://localhost:8080
   connection:
     minimum-idle: 2
     maximum-pool-size: 16

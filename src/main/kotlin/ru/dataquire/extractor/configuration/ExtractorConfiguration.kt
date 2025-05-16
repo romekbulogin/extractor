@@ -18,7 +18,7 @@ private const val REGISTRATION_PATH: String = "/v1/api/coordinator/registration"
 
 @Configuration
 class ExtractorConfiguration(
-    private val server: ServerProperties,
+    private val serverProperties: ServerProperties,
     private val extractorProperties: ExtractorProperties
 ) {
     private val logger: Logger = LoggerFactory.getLogger(ExtractorConfiguration::class.java)
@@ -30,7 +30,8 @@ class ExtractorConfiguration(
             val restClient = RestClient.create()
             val response = restClient.post()
                 .uri("${extractorProperties.coordinator.address}${REGISTRATION_PATH}")
-                .body(server.port)
+                .body(serverProperties.port)
+                .header("X-Worker-Type", "extractor")
                 .retrieve()
                 .toEntity<String>()
             require(response.statusCode == HttpStatus.OK) { "Registration failed" }

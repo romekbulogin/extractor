@@ -3,21 +3,28 @@ package ru.dataquire.extractor.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import org.apache.kafka.clients.admin.AdminClient
 import org.jooq.impl.DSL.using
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.kafka.config.TopicBuilder
+import org.springframework.kafka.core.KafkaAdmin
+import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
 import ru.dataquire.extractor.configuration.properties.ExtractorProperties
 import ru.dataquire.extractor.dto.request.ExtractRequest
 import ru.dataquire.extractor.dto.response.ExtractResponse
 import java.sql.SQLException
+import java.util.*
 import java.util.concurrent.Executors
 import javax.sql.DataSource
 
 @Service
 class ExtractService(
     private val mapper: ObjectMapper,
-    private val extractorProperties: ExtractorProperties
+    private val extractorProperties: ExtractorProperties,
+    private val kafkaAdmin: KafkaAdmin,
+    private val kafkaTemplate: KafkaTemplate<String, String>
 ) {
     private val logger: Logger = LoggerFactory.getLogger(ExtractService::class.java)
 
@@ -31,7 +38,6 @@ class ExtractService(
                 minimumIdle = extractorProperties.connection.minimumIdle
                 maximumPoolSize = extractorProperties.connection.maximumPoolSize
             }).use { dataSource ->
-
                 val countRecordsInTable = dataSource.connection.use { connection ->
                     using(connection).selectFrom(request.table).count()
                 }
@@ -65,6 +71,19 @@ class ExtractService(
         request: ExtractRequest,
         chunk: List<Int>
     ) = Runnable {
+        val catalog = request.dataSource.url.split("/", limit = 4).last()
+        val topicName = "extract-load-${request.table}-${catalog}-${request.dataSource.url.hashCode()}"
+
+        AdminClient.create(kafkaAdmin.configurationProperties).use { admin ->
+            val topic = TopicBuilder
+                .name(topicName)
+                .config("max.message.bytes", "26214400")
+                .replicas(1)
+                .partitions(10)
+                .build()
+            admin.createTopics(listOf(topic))
+        }
+
         dataSource.connection.use { connection ->
             logger.debug("[EXTRACT] Processing chunk {}-{}", chunk.first(), chunk.last())
             val records = using(connection)
@@ -78,6 +97,7 @@ class ExtractService(
                 .fetch()
             records.forEach { record ->
                 val json = mapper.writeValueAsString(record.intoMap())
+                kafkaTemplate.send(topicName, UUID.randomUUID().toString(), json)
                 logger.debug("[EXTRACT] {}", json)
             }
         }
